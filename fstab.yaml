@@ -1,5 +1,5 @@
 mountpoints:
   /:
-    url: "https://author-p194554-e2018223.adobeaemcloud.com/bin/franklin.delivery/adobe-rnd/aem-boilerplate-xwalk/main"
+    url: "https://author-p194554-e2018223.adobeaemcloud.com/bin/franklin.delivery/shady-cansultant/eds-ue-demos/main"
     type: "markup"
     suffix: ".html"

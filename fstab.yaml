@@ -1,5 +1,5 @@
 mountpoints:
   /:
-    url: "https://author-p194554-e2018223.adobeaemcloud.com/bin/franklin.delivery/shady-cansultant/eds-ue-demos/main"
+    url: "https://author-p194554-e2018223.adobeaemcloud.com/bin/franklin.delivery/shady-cansultant/eds-ue-demo/main"
     type: "markup"
     suffix: ".html"

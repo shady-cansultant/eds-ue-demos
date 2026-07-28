@@ -1,0 +1,12 @@
+[
+  { "...": "../../_page.json#/models" },
+  { "...": "../../_image.json#/models" },
+  { "...": "../../_title.json#/models" },
+  { "...": "../../_text.json#/models" },
+  { "...": "../../_button.json#/models" },
+  { "...": "../../_section.json#/models" },
+  { "...": "../../../blocks/cards/_cards.json#/models" },
+  { "...": "../../../blocks/columns/_columns.json#/models" },
+  { "...": "../../../blocks/fragment/_fragment.json#/models" },
+  { "...": "./_hero.json#/models" }
+]

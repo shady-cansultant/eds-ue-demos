@@ -38,7 +38,7 @@ row below is the platform default — zero custom code.
 | 2 | Per-site **aggregators** (×3 each) | `models/sites/<site>/_component-{definition,models,filters}.json` | The convenient `blocks/*/_*.json` glob is lost; each site hand-lists every block |
 | 3 | Hand-forked **section filter** | `models/sites/plum/_component-filters.json` | To drop `cards` from *one* site you fork the whole section palette (can't reuse the shared one) |
 | 4 | Bespoke **build script** | `scripts/build-site-config.mjs` | Emits `component-*.<site>.json` per site, then copies ONE to the served files |
-| 5 | Runtime **site registry** | `scripts/site.js` | Shared JS must detect which brand it's running as (hostname → site key), by hand |
+| 5 | Runtime **site detection** | `scripts/site.js` | Shared JS must detect which brand it's running as. Primary signal: the `components` page metadata (`<meta name="components">`), authored per site — stable in delivery AND the Universal Editor (hostname isn't: in UE it's the author origin, so it always looked like the default site) |
 | 6 | Hook into **shared entry point** | `scripts/scripts.js` (`decorateSite()`) | Core, every-page code now carries multi-brand concerns |
 | 7 | Per-site **block JS branch** | `blocks/hero/hero.js` | One block, `if (site === 'plum')` … grows per brand |
 | 8 | Per-site **block CSS block** | `blocks/hero/hero.css` (`html[data-site="plum"]`) | Requirement #3 (completely different UI) can't be a CSS-var swap |

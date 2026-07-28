@@ -9,7 +9,7 @@ import {
 } from './aem.js';
 import { decorateRichtext } from './editor-support-rte.js';
 import { decorateButtons, decorateMain } from './scripts.js';
-import { siteFromHost, DEFAULT_SITE } from './site.js';
+import { siteFromMeta, siteFromHost, DEFAULT_SITE } from './site.js';
 
 let promiseChanges$ = Promise.resolve();
 
@@ -118,9 +118,14 @@ function attachEventListeners(main) {
  * PoC: per-site block collections in ONE codebase — the bridge that makes it work.
  *
  * The Universal Editor injects <script src=".../component-{definition,models,filters}.json">
- * into this document. Here we detect which brand is being edited (from the injected
- * script's OWN origin, which carries the site host) and repoint each script to that
- * brand's variant — component-*.<site>.json — which ships in this same shared codebase.
+ * into this document. Here we detect which brand is being edited and repoint each script
+ * to that brand's variant — component-*.<site>.json — which ships in this same shared
+ * codebase.
+ *
+ * Site detection uses the `components` page metadata (scripts/site.js), which is stable
+ * inside the editor. The hostname is NOT reliable here: in UE the page is served from the
+ * author origin, so hostname detection always fell back to the default (mlc) and Plum
+ * never got its config.
  *
  * This is what makes "different models/palette per site" possible without a branch or
  * repo per site. It is also the bespoke, unsupported plumbing you then own forever:
@@ -131,14 +136,7 @@ function attachEventListeners(main) {
  * definition and models scripts follows the identical pattern; confirm in a live UE session.
  */
 function loadPerSiteEditorConfig() {
-  const probe = document.querySelector('script[src*="/component-filters"]');
-  if (!probe) return;
-  let site = DEFAULT_SITE;
-  try {
-    site = siteFromHost(new URL(probe.src).hostname);
-  } catch (e) {
-    // keep default
-  }
+  const site = siteFromMeta() || siteFromHost(window.location.hostname) || DEFAULT_SITE;
   // The default site's config is already served as the canonical component-*.json.
   if (site === DEFAULT_SITE) return;
   ['definition', 'models', 'filters'].forEach((kind) => {

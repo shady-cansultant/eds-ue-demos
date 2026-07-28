@@ -3,15 +3,17 @@
 **Question this answers:** *"How heavy is it to give each brand its own block collection —
 different component models/definitions per site — inside a single shared (repoless) codebase?"*
 
-**Answer:** heavy, and partly impossible without a branch per site. We built it for **one block
-(`hero`)** so the cost is concrete. Every number below multiplies by *(blocks × brands)*.
+**Answer:** achievable — but only by building and owning bespoke plumbing. We built it for **one
+block (`hero`)** so the cost is concrete. Every number below multiplies by *(blocks × brands)*.
 
-> TL;DR — In Edge Delivery a block couples **Availability + Content Model + Presentation (JS/CSS)**,
-> and a single deployed code ref serves exactly **one** `component-definition/models/filters`.
-> There is **no per-site override** (see
-> [aem.live/developer/repoless-multisite-manager](https://www.aem.live/developer/repoless-multisite-manager)).
-> So "per-site block collections in one repo" is emulated with bespoke build + runtime plumbing,
-> and the authoring config still can't diverge without a **branch per site**.
+> TL;DR — In Edge Delivery a block couples **Availability + Content Model + Presentation (JS/CSS)**.
+> The canonical `/component-definition.json` (and `-models`, `-filters`) served at a site's origin
+> is a single **code file**, shared by every site on that codebase. But the Universal Editor injects
+> those configs as `<script>` tags, and **`editor-support.js` can swap them at edit time** to a
+> per-site variant (`component-*.<site>.json`) shipped in the same repo. So per-site block
+> collections in one codebase **are possible** — via per-site config files + a runtime registry +
+> an editor-support swap — no branch/repo per site required. The question is whether owning that
+> plumbing beats a repo per site (which gets all of it natively).
 
 ## The scenario
 
@@ -40,41 +42,46 @@ row below is the platform default — zero custom code.
 | 6 | Hook into **shared entry point** | `scripts/scripts.js` (`decorateSite()`) | Core, every-page code now carries multi-brand concerns |
 | 7 | Per-site **block JS branch** | `blocks/hero/hero.js` | One block, `if (site === 'plum')` … grows per brand |
 | 8 | Per-site **block CSS block** | `blocks/hero/hero.css` (`html[data-site="plum"]`) | Requirement #3 (completely different UI) can't be a CSS-var swap |
+| 9 | **UE config swap** | `scripts/editor-support.js` (`loadPerSiteEditorConfig`) | Detects the edited brand + repoints the injected config `<script>`s to `component-*.<site>.json` — the bridge that makes per-site authoring work |
 
-**For ONE block and TWO brands:** ~8 new files + 3 shared-file intrusions.
+**For ONE block and TWO brands:** ~9 new files + 4 shared-file intrusions.
 Scale that by your real block count and brand count.
 
-## The wall (this is the important part)
+## How it actually works (the editor-support.js swap)
 
-Steps 1–4 build a **correct** per-site authoring config — you can inspect
-`component-definition.plum.json` and see Plum's 6-field hero and no `cards`. **But EDS serves a
-single `component-definition.json` per code ref, shared by every site pointed at that code.**
+Steps 1–4 build a **correct** per-site authoring config — inspect `component-definition.plum.json`
+and see Plum's 6-field hero and no `cards`. The canonical `/component-definition.json` served at a
+site's origin is a single **code file**, so by default *every* site on this codebase gets the same
+one (see the live check below).
 
-So to actually *serve* Plum's authoring config you must put it on a **separate branch** and point the
-Plum site's code ref at that branch:
+The bridge is step 9. The Universal Editor injects the config as `<script>` tags, and
+`editor-support.js` runs where it can reach them. It detects which brand is being edited (from the
+injected script's own origin host) and swaps each `<script>` to that brand's variant:
 
 ```
-main        →  component-*.json = MLC   →  site: eds-ue-demos       (MLC)
-site/plum   →  component-*.json = Plum  →  site: eds-ue-demo-plum   (Plum)
+edit a page on   main--eds-ue-demo-plum--…    (Plum origin)
+  editor-support.js sees script src …/component-filters.json
+  → detects site = plum
+  → replaces it with …/component-filters.plum.json  (ships in this same repo)
+  → UE now offers Plum's palette + Plum's hero model
 ```
 
-At that point your "one repo, one codebase" is **one branch per brand** — i.e. N divergent
-codebases wearing a single repo, which you now keep in sync by hand. That is strictly worse than
-N repos, because it *looks* shared but isn't.
+No branch or repo per site — just per-site config files, a registry, and this swap, all owned by you.
 
-### Live proof
-`eds-ue-demos` (MLC) and `eds-ue-demo-plum` (Plum) are two aem.live sites sharing this **one** code
-repo. Fetch the served config from each delivery origin — they are **byte-identical**, because the
-authoring config comes from the code, not the site:
+> **Verified vs. assumed:** swapping the *filters* script is a proven technique. Swapping
+> *definition* and *models* follows the identical pattern and is implemented here; confirm in a
+> live UE session, since the editor may read those at a different moment than filters.
+
+### Live check — the default served file is shared
+`eds-ue-demos` (MLC) and `eds-ue-demo-plum` (Plum) share this **one** repo. The canonical config is
+byte-identical at both origins — which is exactly why the step-9 swap (not the default file) is what
+delivers per-site divergence:
 
 ```bash
-curl -s https://main--eds-ue-demos--shady-cansultant.aem.page/component-models.json     | shasum
-curl -s https://main--eds-ue-demo-plum--shady-cansultant.aem.page/component-models.json | shasum
-# → same hash. The per-site divergence you see in component-models.plum.json is NOT served.
+curl -s https://main--eds-ue-demos--shady-cansultant.aem.live/component-models.json     | shasum
+curl -s https://main--eds-ue-demo-plum--shady-cansultant.aem.live/component-models.json | shasum
+# → same hash (48472f81…). Per-site divergence comes from loading component-models.<site>.json instead.
 ```
-
-The **only** divergence you get "for free" on shared code is runtime JS/CSS
-(`scripts/site.js` + `html[data-site]`) — and even that is the bespoke registry in step 5–8.
 
 ## Contrast: a repo per site
 
@@ -82,9 +89,10 @@ The **only** divergence you get "for free" on shared code is runtime JS/CSS
 |---|---|---|
 | Per-site model | Duplicate + custom build | Native — it's that repo's `_hero.json` |
 | Per-site palette | Hand-forked filters | Native — that repo's filters |
-| Serve per-site config | **Branch per site** | Native — separate deploys |
+| Serve per-site config | Per-site files + **editor-support swap** | Native — it's that repo's config |
 | Per-site JS/CSS | Registry + branching in shared files | Native — that repo's files |
 | Blast radius | Global (all brands) | Contained |
+| Fragility | Unsupported editor hook you own | None — supported defaults |
 | Custom framework code | All of the above | **None** |
 
 ## Run it

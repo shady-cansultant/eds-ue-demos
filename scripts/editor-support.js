@@ -9,6 +9,7 @@ import {
 } from './aem.js';
 import { decorateRichtext } from './editor-support-rte.js';
 import { decorateButtons, decorateMain } from './scripts.js';
+import { siteFromHost, DEFAULT_SITE } from './site.js';
 
 let promiseChanges$ = Promise.resolve();
 
@@ -113,7 +114,47 @@ function attachEventListeners(main) {
   }));
 }
 
+/*
+ * PoC: per-site block collections in ONE codebase — the bridge that makes it work.
+ *
+ * The Universal Editor injects <script src=".../component-{definition,models,filters}.json">
+ * into this document. Here we detect which brand is being edited (from the injected
+ * script's OWN origin, which carries the site host) and repoint each script to that
+ * brand's variant — component-*.<site>.json — which ships in this same shared codebase.
+ *
+ * This is what makes "different models/palette per site" possible without a branch or
+ * repo per site. It is also the bespoke, unsupported plumbing you then own forever:
+ * a per-brand registry (scripts/site.js) + N config files + this swap. With a repo per
+ * site none of it exists.
+ *
+ * Verified: swapping the filters script is a known-working technique. Swapping the
+ * definition and models scripts follows the identical pattern; confirm in a live UE session.
+ */
+function loadPerSiteEditorConfig() {
+  const probe = document.querySelector('script[src*="/component-filters"]');
+  if (!probe) return;
+  let site = DEFAULT_SITE;
+  try {
+    site = siteFromHost(new URL(probe.src).hostname);
+  } catch (e) {
+    // keep default
+  }
+  // The default site's config is already served as the canonical component-*.json.
+  if (site === DEFAULT_SITE) return;
+  ['definition', 'models', 'filters'].forEach((kind) => {
+    const script = document.querySelector(`script[src*="/component-${kind}"]`);
+    if (!script) return;
+    const src = script.src.replace(`component-${kind}.json`, `component-${kind}.${site}.json`);
+    if (src === script.src) return;
+    const replacement = document.createElement('script');
+    replacement.src = src;
+    replacement.type = script.type;
+    script.parentNode.replaceChild(replacement, script);
+  });
+}
+
 attachEventListeners(document.querySelector('main'));
+loadPerSiteEditorConfig();
 
 // decorate rich text
 // this has to happen after decorateMain(), and everythime decorateBlocks() is called

@@ -22,24 +22,28 @@ export const DEFAULT_SITE = 'mlc';
 let cachedSite;
 
 /**
+ * Map a hostname to a site key using the registry above.
+ * @param {string} host e.g. 'main--eds-ue-demo-plum--org.aem.page'
+ * @returns {string} site key, or DEFAULT_SITE if unknown
+ */
+export function siteFromHost(host = '') {
+  const match = Object.keys(SITE_BY_HOST).find((fragment) => host.includes(fragment));
+  return match ? SITE_BY_HOST[match] : DEFAULT_SITE;
+}
+
+/**
  * Resolve the current site key from the hostname
  * (or a ?site= override for local dev / Universal Editor previews).
  * @returns {string} site key e.g. 'mlc' | 'plum'
  */
 export function getSite() {
   if (cachedSite) return cachedSite;
-  let site = DEFAULT_SITE;
   const override = new URLSearchParams(window.location.search).get('site');
   const known = Object.values(SITE_BY_HOST);
-  if (override && known.includes(override)) {
-    site = override;
-  } else {
-    const host = window.location.hostname;
-    const match = Object.keys(SITE_BY_HOST).find((fragment) => host.includes(fragment));
-    if (match) site = SITE_BY_HOST[match];
-  }
-  cachedSite = site;
-  return site;
+  cachedSite = override && known.includes(override)
+    ? override
+    : siteFromHost(window.location.hostname);
+  return cachedSite;
 }
 
 /**

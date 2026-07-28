@@ -1,3 +1,13 @@
+/*
+ * hero.css — base (MLC) styling + a completely different Plum skin.
+ *
+ * ⚠️ PoC: requirement #3 (per-site "completely different UI") cannot be done
+ * with CSS variables alone, so Plum gets a full block of overriding rules under
+ * html[data-site="plum"]. Every brand that diverges adds another such block to
+ * this shared file. With a repo per site, hero.css would just be one brand.
+ */
+
+/* ---------- MLC / default hero ---------- */
 .hero-container .hero-wrapper {
   max-width: unset;
   padding: 0;
@@ -34,4 +44,52 @@
   .hero {
     padding: 40px 32px;
   }
+}
+
+/* ---------- Plum hero: a full rewrite, not a theme swap ---------- */
+html[data-site="plum"] .hero {
+  display: grid;
+  gap: 16px;
+  align-content: center;
+  min-height: 420px;
+  padding: 64px 32px;
+  text-align: left;
+  background: linear-gradient(135deg, #4a1a5c 0%, #7b2d8e 100%);
+}
+
+html[data-site="plum"] .hero picture {
+  position: static;
+  z-index: 0;
+  max-width: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+html[data-site="plum"] .hero img {
+  height: auto;
+}
+
+html[data-site="plum"] .hero h1 {
+  margin: 0;
+  max-width: 20ch;
+  color: #fff;
+  font-size: 3rem;
+  line-height: 1.05;
+}
+
+html[data-site="plum"] .hero .hero-eyebrow {
+  margin: 0;
+  color: #ffcf3f;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+html[data-site="plum"] .hero .hero-cta.button {
+  justify-self: start;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: #ffcf3f;
+  color: #4a1a5c;
+  font-weight: 700;
 }

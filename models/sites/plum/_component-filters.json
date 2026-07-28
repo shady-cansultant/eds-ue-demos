@@ -1,0 +1,10 @@
+[
+  { "id": "main", "components": ["section"] },
+  {
+    "id": "section",
+    "components": ["text", "image", "button", "title", "hero", "columns", "fragment"]
+  },
+  { "...": "../../../blocks/columns/_columns.json#/filters" },
+  { "...": "../../../blocks/fragment/_fragment.json#/filters" },
+  { "...": "./_hero.json#/filters" }
+]

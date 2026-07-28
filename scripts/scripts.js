@@ -10,6 +10,8 @@ import {
   loadSections,
   loadCSS,
 } from './aem.js';
+// PoC: bespoke per-site detection, needed only because many brands share this repo.
+import { decorateSite } from './site.js';
 
 /**
  * Moves all the attributes from a given elmenet to another given element.
@@ -129,6 +131,8 @@ export function decorateMain(main) {
 async function loadEager(doc) {
   document.documentElement.lang = 'en';
   decorateTemplateAndTheme();
+  decorateSite(); // PoC: stamp html[data-site] so shared blocks/CSS can branch per brand
+
   const main = doc.querySelector('main');
   if (main) {
     decorateMain(main);
